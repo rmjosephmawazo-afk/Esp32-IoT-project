@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Smart Home Energy Monitoring dashboard">
+  <title>Smart Home Energy Monitoring</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1220;
+      --panel: #121d30;
+      --panel-soft: #18263d;
+      --text: #edf4ff;
+      --muted: #9fb0c8;
+      --accent: #42d3a5;
+      --blue: #66aaff;
+      --border: rgba(255,255,255,.09);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top right, #172b48 0, var(--bg) 42%);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px clamp(18px, 5vw, 64px);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      display: grid; place-items: center; width: 42px; height: 42px;
+      border-radius: 13px; background: rgba(66,211,165,.14);
+      color: var(--accent); font-size: 23px;
+    }
+    h1 { margin: 0; font-size: clamp(19px, 3vw, 25px); }
+    .subtitle { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .status {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border: 1px solid var(--border);
+      border-radius: 999px; color: var(--muted); font-size: 12px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #f0b44d; }
+    main { width: min(1120px, 92%); margin: 34px auto 60px; }
+    .welcome { margin-bottom: 24px; }
+    .welcome h2 { margin: 0 0 8px; font-size: clamp(22px, 4vw, 30px); }
+    .welcome p { margin: 0; color: var(--muted); }
+    .grid {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: linear-gradient(145deg, rgba(24,38,61,.96), rgba(18,29,48,.96));
+      border: 1px solid var(--border); border-radius: 18px; padding: 20px;
+      min-width: 0;
+    }
+    .metric-label { color: var(--muted); font-size: 13px; }
+    .metric-value { margin: 13px 0 5px; font-size: clamp(25px, 4vw, 34px); font-weight: 700; }
+    .metric-note { color: var(--muted); font-size: 12px; }
+    .unit { font-size: 14px; color: var(--muted); font-weight: 500; }
+    .section-title { margin: 30px 0 14px; font-size: 18px; }
+    .wide { grid-column: span 2; }
+    .chart {
+      height: 180px; display: flex; align-items: end; gap: 12px;
+      padding: 18px 6px 0; border-bottom: 1px solid var(--border);
+    }
+    .bar-wrap { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: end; align-items: center; gap: 8px; }
+    .bar { width: min(34px, 75%); border-radius: 7px 7px 2px 2px; background: linear-gradient(180deg, var(--accent), #278caa); min-height: 5px; }
+    .bar-label { color: var(--muted); font-size: 11px; }
+    .notice { color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .device-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border); }
+    .device-row:last-child { border-bottom: 0; }
+    .device-name { font-size: 14px; }
+    .device-state { color: var(--muted); font-size: 12px; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px; }
+    @media (max-width: 800px) { .grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    @media (max-width: 520px) {
+      header { align-items: flex-start; flex-direction: column; }
+      .grid { grid-template-columns: 1fr; }
+      .wide { grid-column: span 1; }
+      main { margin-top: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">⌁</div>
+      <div>
+        <h1>Smart Home Energy</h1>
+        <p class="subtitle">Energy monitoring dashboard</p>
+      </div>
+    </div>
+    <div class="status"><span class="dot"></span><span id="connection-status">Waiting for device data</span></div>
+  </header>
+
+  <main>
+    <section class="welcome">
+      <h2>Energy Overview</h2>
+      <p>Monitor your home's electrical usage in one place.</p>
+    </section>
+
+    <section class="grid" aria-label="Energy measurements">
+      <article class="card">
+        <div class="metric-label">Voltage</div>
+        <div class="metric-value" id="voltage">-- <span class="unit">V</span></div>
+        <div class="metric-note">AC supply voltage</div>
+      </article>
+      <article class="card">
+        <div class="metric-label">Current</div>
+        <div class="metric-value" id="current">-- <span class="unit">A</span></div>
+        <div class="metric-note">Instantaneous current</div>
+      </article>
+      <article class="card">
+        <div class="metric-label">Power</div>
+        <div class="metric-value" id="power">-- <span class="unit">W</span></div>
+        <div class="metric-note">Active power</div>
+      </article>
+      <article class="card">
+        <div class="metric-label">Energy Used</div>
+        <div class="metric-value" id="energy">-- <span class="unit">kWh</span></div>
+        <div class="metric-note">Accumulated energy</div>
+      </article>
+
+      <article class="card wide">
+        <h3 class="section-title" style="margin-top:0">Usage Snapshot</h3>
+        <div class="chart" aria-label="Illustrative weekly energy chart">
+          <div class="bar-wrap"><div class="bar" style="height:38%"></div><span class="bar-label">Mon</span></div>
+          <div class="bar-wrap"><div class="bar" style="height:55%"></div><span class="bar-label">Tue</span></div>
+          <div class="bar-wrap"><div class="bar" style="height:45%"></div><span class="bar-label">Wed</span></div>
+          <div class="bar-wrap"><div class="bar" style="height:72%"></div><span class="bar-label">Thu</span></div>
+          <div class="bar-wrap"><div class="bar" style="height:61%"></div><span class="bar-label">Fri</span></div>
+          <div class="bar-wrap"><div class="bar" style="height:88%"></div><span class="bar-label">Sat</span></div>
+          <div class="bar-wrap"><div class="bar" style="height:49%"></div><span class="bar-label">Sun</span></div>
+        </div>
+        <p class="notice">Sample chart only. Connect your ESP32 and data service to display real readings.</p>
+      </article>
+
+      <article class="card wide">
+        <h3 class="section-title" style="margin-top:0">System Devices</h3>
+        <div class="device-row">
+          <div><div class="device-name">ESP32 Controller</div><div class="device-state">Telemetry source</div></div>
+          <span class="status"><span class="dot"></span>Not connected</span>
+        </div>
+        <div class="device-row">
+          <div><div class="device-name">PZEM-004T V3.0</div><div class="device-state">AC energy meter</div></div>
+          <span class="status">Awaiting data</span>
+        </div>
+        <p class="notice">Live readings will appear after the ESP32-to-cloud connection is configured.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer>Smart Home Energy Monitoring · ESP32 + PZEM-004T V3.0 · Web interface prototype</footer>
+</body>
+</html>
